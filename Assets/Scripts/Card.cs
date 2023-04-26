@@ -2,104 +2,216 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Cyan.Cards {
+public class Card : MonoBehaviour
+{
+    private string cardName;
+    public int power;
+    public int index;
+    public int group;
+    private bool active = false;
+    public int isSpecial;
+    public bool weatherEffect = false;
+
+    private SpriteRenderer spriteRenderer;
+    private BoxCollider2D cardColider;
+
+    private GameObject cardModelGameObject;
+    private CardModel cardModel;
     
-    public class Card : MonoBehaviour {
-
-        [Tooltip("Mana required to use card")]
-        public int mana;
-        
-        protected Color color;
-        protected Color color2;
-
-        protected MeshRenderer meshRenderer;
-        protected Material material;
-
-        protected Vector2 dissolveOffset = new Vector2(0.1f, 0);
-        protected Vector2 dissolveSpeed = new Vector2(2f, 2f);
-        protected Color dissolveColor;
-
-        protected bool isInactive;
-        
-        protected virtual void Start() {
-            meshRenderer = GetComponentInChildren<MeshRenderer>();
-            material = meshRenderer.material; // Create material instance
-
-            color = material.GetColor("_Color");
-            color2 = material.GetColor("_OutlineColor");
-            dissolveColor = material.GetColor("_DissolveColor");
-
-            // Colour Tests
-            /*
-            int i = transform.GetSiblingIndex();
-            int count = transform.parent.childCount;
-
-            color = Color.HSVToRGB((float)i / count, Random.Range(0.7f, 0.9f), 1f);
-            color2 = Color.HSVToRGB((float)i / count + Random.Range(-0.05f, 0.05f), 0.9f, Random.Range(0.6f, 0.8f));
-            dissolveColor = Random.ColorHSV(0, 1, 1, 1, 1, 1);
-
-            material.SetColor("_Color", color);
-            material.SetColor("_OutlineColor", color2);*/
-        }
-
-        /// <summary>
-        /// <para>Triggered when the card is used (dragged up then mouse released, with required mana).</para>
-        /// <para>This should probably be overriden by a class that inherits this class, to trigger something
-        /// or maybe add something here to trigger an event / UnityEvent, etc.</para>
-        /// <para>Base applies a dissolve effect, which can be adjusted using dissolveOffset, dissolveSpeed, dissolveColor</para>
-        /// </summary>
-        public virtual void Use() {
-            // Handle Dissolve Effect
-            StartCoroutine(Dissolve());
-        }
-
-        protected IEnumerator Dissolve() {
-            Vector2 t = Vector2.zero - dissolveOffset;
-            while (t.x < 1) {
-                t.x = (t.x + Time.deltaTime * dissolveSpeed.x);
-                if (t.y < 1) {
-                    t.y = (t.y + Time.deltaTime * dissolveSpeed.y);
-                }
-                material.SetVector("_Dissolve", t);
-                material.SetColor("_DissolveColor", dissolveColor * 4 * t.y);
-                yield return null;
-            }
-            Destroy(gameObject);
-        }
-
-        /// <summary>
-        /// Use to swap the card material to an inactiveMaterial. If true should pass in the inactiveMaterial. false resets it to the regular card material so inactiveMaterial can be null.
-        /// </summary>
-        public virtual void SetInactiveMaterialState(bool isInactive, Material inactiveMaterial = null) {
-            if (isInactive == this.isInactive) {
-                return; // No change
-            }
-            this.isInactive = isInactive;
-            if (isInactive) {
-                // Greyed Out
-                /* // Grey out based on original colours (only really works for bright colours, so using separate material instead)
-                Color.RGBToHSV(color, out float hue, out float sat, out float val);
-                material.SetColor("_Color", Color.HSVToRGB(0, 0, val - 0.2f));
-
-                Color.RGBToHSV(color2, out hue, out sat, out val);
-                material.SetColor("_OutlineColor", Color.HSVToRGB(0, 0, val - 0.2f));*/
-
-                // Switch to Inactive Material
-                meshRenderer.sharedMaterial = inactiveMaterial;
-            } else {
-                // Normal Colour
-                //material.SetColor("_Color", color);
-                //material.SetColor("_OutlineColor", color2);
-
-                // Switch back to normal Material
-                meshRenderer.sharedMaterial = material;
-            }
-        }
-        
-        public virtual void OnDestroy() {
-            if (material != null) Destroy(material);
-        }
-        
+    void Awake()
+    {
+        cardModelGameObject = GameObject.Find("CardModel");
+        cardModel = cardModelGameObject.GetComponent<CardModel>();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        cardColider = GetComponent<BoxCollider2D>();
+        cardColider.size = new Vector2(1f, 1.45f);
     }
 
+    /// <summary>
+    /// Name of card
+    /// </summary>
+    /// <returns>name of card</returns>
+    public string getCardName()
+    {
+        return this.cardName;
+    }
+
+    /// <summary>
+    /// Set name of card
+    /// </summary>
+    /// <param name="cardName">New card's name</param>
+    public void setCardName(string cardName)
+    {
+        this.cardName = cardName;
+    }
+
+    /// <summary>
+    /// Power of card
+    /// </summary>
+    /// <returns>power of card</returns>
+    public int getPower()
+    {
+        return this.power;
+    }
+
+    /// <summary>
+    /// Set power of card
+    /// </summary>
+    /// <param name="power">New card's power</param>
+    public void setPower(int power)
+    {
+        this.power = power;
+    }
+
+    /// <summary>
+    /// Set index of card
+    /// </summary>
+    /// <param name="index">new card's index</param>
+    public void setIndex(int index)
+    {
+        this.index = index;
+        this.group = cardModel.groups[index];
+    }
+
+    /// <summary>
+    /// Index of card
+    /// </summary>
+    /// <returns>Card's index</returns>
+    public int getIndex()
+    {
+        return this.index;
+    }
+
+    /// <summary>
+    /// Set new state of card
+    /// </summary>
+    /// <param name="state">New card's state (true or false)</param>
+    public void setActive(bool state)
+    {
+        this.active = state;
+    }
+
+    /// <summary>
+    /// Check if card is active
+    /// </summary>
+    /// <returns>True if card is active, false otherwise</returns>
+    public bool isActive()
+    {
+        return this.active;
+    }
+
+    /// <summary>
+    /// Get card's collision bounds
+    /// </summary>
+    /// <returns>Card's collision bounds</returns>
+    public Bounds getBounds()
+    {
+        return this.cardColider.bounds;
+    }
+
+    /// <summary>
+    /// Get card's name and it's power in string
+    /// </summary>
+    /// <returns>card's name and it's power in string</returns>
+    public string toString()
+    {
+        return this.cardName + " card with power " + this.power;
+    }
+
+    /// <summary>
+    /// Set new card's front image
+    /// </summary>
+    /// <param name="index">New card's front image</param>
+    public void setFront(int index)
+    {
+        spriteRenderer.sprite = cardModel.getSmallFront(index);
+    }
+
+    /// <summary>
+    /// Set new card's front image from big cards set
+    /// </summary>
+    /// <param name="index">index of new big front image</param>
+    public void setBigFront(int index)
+    {
+        if (index == 0)
+            spriteRenderer.sprite = null;
+        else
+            spriteRenderer.sprite = cardModel.getBigFront(index - 1);
+    }
+
+    /// <summary>
+    /// Set card's group
+    /// </summary>
+    /// <param name="group">1 - sword, 2 - bow, 3 - trebuchet</param>
+    public void setGroup(int group)
+    {
+        this.group = group;
+    }
+
+    /// <summary>
+    /// Get card's group
+    /// </summary>
+    /// <returns>1 - sword, 2 - bow, 3 - trebuchet</returns>
+    public int getGroup()
+    {
+        return this.group;
+    }
+
+    /// <summary>
+    /// Get a cardModel object
+    /// </summary>
+    /// <returns>cardModel object</returns>
+    public CardModel getCardModel()
+    {
+        return this.cardModel;
+    }
+
+    /// <summary>
+    /// Get is Special status of card
+    /// </summary>
+    /// <returns>special group value of card ([0] - normal, [1] - gold, [2] - spy, [3] - manekin, [4] - destroy, [5] - weather)</returns>
+    public int getIsSpecial()
+    {
+        return this.isSpecial;
+    }
+
+    /// <summary>
+    /// Set a isSpecial attribute
+    /// </summary>
+    /// <param name="isSpecial">true if card is special type</param>
+    public void setIsSpecial(int isSpecial)
+    {
+        this.isSpecial = isSpecial;
+    }
+
+    /// <summary>
+    /// Flip card
+    /// </summary>
+    /// <param name="x">true if you want to flip in x axis</param>
+    /// <param name="y">true if you want to flip in y axis</param>
+    public void flip(bool x, bool y)
+    {
+        if (x == true)
+        {
+            if (spriteRenderer.flipX == true)
+                spriteRenderer.flipX = false;
+            else
+                spriteRenderer.flipX = true;
+        }
+        if (y == true)
+        {
+            if (spriteRenderer.flipY == true)
+                spriteRenderer.flipY = false;
+            else
+                spriteRenderer.flipY = true;
+        }
+    }
+
+    /// <summary>
+    /// Mirror transformation around (0,0,0) point of Desk
+    /// </summary>
+    public void mirrorTransform()
+    {
+        transform.position = new Vector3(transform.position.x * -1 + 4.39f, transform.position.y * -1 + 1.435f, transform.position.z);
+    }
 }
